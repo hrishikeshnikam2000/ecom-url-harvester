@@ -21,9 +21,9 @@ export class FirecrawlService {
   static async discoverProductUrls(domains: string[]): Promise<CrawlResult> {
     const apiKey = this.getApiKey();
     
+    // Make API key optional - if not provided, continue with simulation
     if (!apiKey) {
-      toast.error("API key not found. Please enter your Firecrawl API key.");
-      throw new Error("API key not found");
+      console.log("No API key found, proceeding with simulation mode");
     }
     
     // For demo purposes, we'll simulate product URL discovery

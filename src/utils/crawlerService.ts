@@ -1,5 +1,6 @@
 
 import { FirecrawlService } from './FirecrawlService';
+import { toast } from "sonner";
 
 interface CrawlOptions {
   maxPages?: number;
@@ -23,9 +24,12 @@ class CrawlerService {
     }
   }
 
-  isValidApiKey(apiKey: string): boolean {
-    // Simple validation - in a real app, you would test with an API call
-    return apiKey && apiKey.length > 10;
+  isValidApiKey(apiKey: string | null): boolean {
+    // If apiKey is null or undefined, consider it valid now (optional)
+    if (!apiKey) return true;
+    
+    // For non-null apiKeys, check validity
+    return apiKey.length > 10;
   }
 }
 

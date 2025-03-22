@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import Header from '@/components/Header';
 import CrawlerForm from '@/components/CrawlerForm';
 import UrlList from '@/components/UrlList';
@@ -19,37 +19,47 @@ const Index = () => {
   const [apiKey, setApiKey] = useState('');
   
   const handleCrawl = async (domains: string[]) => {
-    if (!crawlerService.isValidApiKey(localStorage.getItem('firecrawl_api_key') || '')) {
-      setShowApiKeyDialog(true);
-      return;
-    }
+    const storedApiKey = localStorage.getItem('firecrawl_api_key');
     
+    // Continue without API key dialog if API key is optional
     setIsLoading(true);
     setShowResults(false);
     
     try {
-      const crawlResults = await crawlerService.discoverProductUrls(domains);
+      // Pass the stored API key if it exists
+      const crawlResults = await crawlerService.discoverProductUrls(domains, {
+        apiKey: storedApiKey || undefined
+      });
+      
       setResults(crawlResults);
       setShowResults(true);
+      toast.success("Crawling completed successfully");
     } catch (error) {
       console.error('Crawl error:', error);
+      toast.error("Error during crawling. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
   
   const handleApiKeySubmit = async () => {
-    if (!crawlerService.isValidApiKey(apiKey)) {
-      // In a real app, you would validate the API key with a test request
-      alert('Please enter a valid API key');
+    if (apiKey && !crawlerService.isValidApiKey(apiKey)) {
+      // Only validate if an API key is provided (it's now optional)
+      toast.error("Please enter a valid API key or leave it empty");
       return;
     }
     
-    localStorage.setItem('firecrawl_api_key', apiKey);
+    // Save API key if provided
+    if (apiKey) {
+      localStorage.setItem('firecrawl_api_key', apiKey);
+    } else {
+      // Remove any existing API key if field was left empty
+      localStorage.removeItem('firecrawl_api_key');
+    }
+    
     setShowApiKeyDialog(false);
     
     // Re-trigger the crawl with the domains from the form
-    // In a real app, you would store the domains before showing the API key dialog
     const domainsInput = document.querySelector('input[placeholder*="domain"]') as HTMLInputElement;
     if (domainsInput && domainsInput.value) {
       handleCrawl([domainsInput.value]);
@@ -134,9 +144,9 @@ const Index = () => {
       <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Enter Firecrawl API Key</DialogTitle>
+            <DialogTitle>Firecrawl API Key (Optional)</DialogTitle>
             <DialogDescription>
-              You need to provide your Firecrawl API key to use the crawler functionality.
+              You can provide a Firecrawl API key for enhanced crawling capabilities, but it's optional.
             </DialogDescription>
           </DialogHeader>
           
@@ -144,11 +154,11 @@ const Index = () => {
             <Input
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Your Firecrawl API key"
+              placeholder="Your Firecrawl API key (optional)"
               className="w-full"
             />
             <p className="text-sm text-muted-foreground mt-2">
-              Your API key is stored locally in your browser and never sent to our servers.
+              If provided, your API key is stored locally in your browser and never sent to our servers.
             </p>
           </div>
           
